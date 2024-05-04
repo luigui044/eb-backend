@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { HttpException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
@@ -16,7 +16,15 @@ export class UsersService {
 
   }
 
+  private readonly blacklist: string[] = [];
 
+  addToBlacklist(token: string) {
+    this.blacklist.push(token);
+  }
+
+  isTokenBlacklisted(token: string): boolean {
+    return this.blacklist.includes(token);
+  }
 
   async create(user: CreateUserDto) {
     const { password } = user;
@@ -38,14 +46,32 @@ export class UsersService {
     const checkPassword = await compare(password, userExist.password);
 
     if (!checkPassword) {
-      return new HttpException('Password is incorrect', 403);
+      throw new BadRequestException('Password is incorrect');
     }
     const payload = { sub: userExist.id, email: userExist.email };
 
     const access_token = this.jwtService.sign(payload);
-    const data = { ...userExist, access_token };
+    const data = { userId: userExist.id, email: userExist.email, access_token };
 
     return data;
+  }
+
+  async getUserById(userId: number) {
+    const user = await this.userRepositorty.findOneBy({
+      id: userId
+    })
+    if (user) {
+      return {
+        id: userId,
+        name: user.name,
+        email: user.email,
+      };
+    }
+    else {
+      return false
+    }
+
+
   }
 
 }
