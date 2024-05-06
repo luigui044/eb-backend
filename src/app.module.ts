@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { EventosModule } from './eventos/eventos.module';
+import { UploadsController } from './uploads/uploads.controller';
 
 @Module({
   imports: [
@@ -37,7 +38,7 @@ import { EventosModule } from './eventos/eventos.module';
     EventosModule
 
   ],
-  controllers: [AppController],
+  controllers: [AppController, UploadsController],
   providers: [AppService, ConfigService],
 })
 export class AppModule { }

@@ -6,8 +6,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Evento } from './entities/evento.entity';
 import { UpdateEventoDto } from './dto/update-evento.dto';
 import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
+import { format } from 'date-fns';
 
-import { extname } from 'path';
 import { promisify } from 'util';
 import { pipeline } from 'stream';
 const pipelineAsync = promisify(pipeline);
@@ -16,34 +16,57 @@ export class EventosService {
 
   constructor(@InjectRepository(Evento) private eventRepository: Repository<Evento>) { }
 
-  async create(createEventoDto: CreateEventoDto, files: { img_banner: Express.Multer.File[], img_portrait: Express.Multer.File[] }) {
+  async create(createEventoDto: CreateEventoDto, files: { img_banner: Express.Multer.File[], img_portrait: Express.Multer.File[], img_localidades: Express.Multer.File[], img_vertical: Express.Multer.File[] }) {
 
-    const urlImgPortrait = this.generarNombreUnico(files.img_banner[0].originalname);
-    const urlImgBanner = this.generarNombreUnico(files.img_portrait[0].originalname);
+    const urlImgPortrait = this.generarNombreUnico(files.img_portrait[0].originalname);
+    const urlImgBanner = this.generarNombreUnico(files.img_banner[0].originalname);
+    const urlImgLocalidades = this.generarNombreUnico(files.img_localidades[0].originalname);
+    const urlImgVertical = this.generarNombreUnico(files.img_vertical[0].originalname);
 
 
     createEventoDto.img_banner = urlImgBanner;
     createEventoDto.img_portrait = urlImgPortrait;
+    createEventoDto.img_localidades = urlImgLocalidades;
+    createEventoDto.img_vertical = urlImgVertical;
 
     const newEvent = this.eventRepository.create(createEventoDto);
     return this.eventRepository.save(newEvent);
   }
 
 
-  async update(id: number, updateEventoDto: UpdateEventoDto) {
 
-    const evento = await this.eventRepository.findOneBy({
-      id: id
-    })
+  async update(
+    id: number,
+    updateEventoDto: UpdateEventoDto,
+    files: { img_banner: Express.Multer.File[], img_portrait: Express.Multer.File[], img_localidades: Express.Multer.File[], img_vertical: Express.Multer.File[] },
+  ) {
+    if (files.img_portrait && files.img_portrait.length > 0 && files.img_portrait[0].originalname) {
+      const urlImgPortrait = this.generarNombreUnico(files.img_portrait[0].originalname);
+      updateEventoDto.img_portrait = urlImgPortrait;
+    }
+    if (files.img_banner && files.img_banner.length > 0 && files.img_banner[0].originalname) {
+      const urlImgBanner = this.generarNombreUnico(files.img_banner[0].originalname);
+      updateEventoDto.img_banner = urlImgBanner;
+    }
+    if (files.img_localidades && files.img_localidades.length > 0 && files.img_localidades[0].originalname) {
+      const urlImgLocalidades = this.generarNombreUnico(files.img_localidades[0].originalname);
+      updateEventoDto.img_localidades = urlImgLocalidades;
+    }
 
+    if (files.img_vertical && files.img_vertical.length > 0 && files.img_vertical[0].originalname) {
+      const urlImgVertical = this.generarNombreUnico(files.img_vertical[0].originalname);
+      updateEventoDto.img_vertical = urlImgVertical;
+    }
+
+    const evento = await this.eventRepository.findOneBy({ id: id });
     if (!evento) {
-      return new HttpException('error al actualizar el evento', 500)
+      throw new HttpException('Error al actualizar el evento', 500);
     }
 
     Object.assign(evento, updateEventoDto);
-
     return await this.eventRepository.save(evento);
   }
+
 
   async getAll() {
     const eventos = await this.eventRepository.find();
@@ -106,13 +129,11 @@ export class EventosService {
 
   private generarNombreUnico(originalname: string): string {
     // Generar un nombre único para la imagen
-    const nombreAleatorio = Array(32)
-      .fill(null)
-      .map(() => (Math.round(Math.random() * 16)).toString(16))
-      .join('');
+    const fechaDeHoy = new Date();
+    const nombreAleatorio = format(fechaDeHoy, 'yyyy-MM-dd');
 
-    const extension = extname(originalname);
-    return `${nombreAleatorio}${extension}`;
+
+    return `${nombreAleatorio}${originalname}`;
   }
 
 }

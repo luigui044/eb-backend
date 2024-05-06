@@ -6,7 +6,7 @@ import { AuthGuard } from '../auth/auth.guards';
 import { UpdateEventoDto } from './dto/update-evento.dto';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { format } from 'date-fns';
 
 @Controller('eventos')
 export class EventosController {
@@ -18,17 +18,17 @@ export class EventosController {
   @UseInterceptors(FileFieldsInterceptor([
     { name: 'img_banner', maxCount: 1 },
     { name: 'img_portrait', maxCount: 1 },
+    { name: 'img_localidades', maxCount: 1 },
+    { name: 'img_vertical', maxCount: 1 },
 
   ], {
     storage: diskStorage({
       destination: './uploads', filename: function (req, file, cb) {
-        const nombreAleatorio = Array(32)
-          .fill(null)
-          .map(() => (Math.round(Math.random() * 16)).toString(16))
-          .join('');
+        const fechaDeHoy = new Date();
+        const nombreAleatorio = format(fechaDeHoy, 'yyyy-MM-dd');
 
-        const extension = extname(file.originalname);
-        cb(null, `${nombreAleatorio}${extension}`)
+
+        cb(null, `${nombreAleatorio}${file.originalname}`)
       }
     })
   }))
@@ -38,17 +38,41 @@ export class EventosController {
 
   @UseGuards(AuthGuard)
   @Patch('actualizar-evento/:id')
-  update(@Param('id') id: number, @Body() updateEventoDto: UpdateEventoDto) {
-    return this.eventosService.update(id, updateEventoDto);
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'img_banner', maxCount: 1 },
+    { name: 'img_portrait', maxCount: 1 },
+    { name: 'img_localidades', maxCount: 1 },
+    { name: 'img_vertical', maxCount: 1 },
+
+  ], {
+    storage: diskStorage({
+      destination: './uploads',
+      filename: function (req, file, cb) {
+        try {
+          const fechaDeHoy = new Date();
+          const nombreAleatorio = format(fechaDeHoy, 'yyyy-MM-dd');
+          cb(null, `${nombreAleatorio}${file.originalname}`)
+        } catch (error) {
+          cb(error, null);
+        }
+      }
+    })
+  }))
+  async update(
+    @Param('id') id: number,
+    @Body() updateEventoDto: UpdateEventoDto,
+    @UploadedFiles() files,
+  ) {
+    return await this.eventosService.update(id, updateEventoDto, files);
   }
 
-  @UseGuards(AuthGuard)
+
   @Get('listar-eventos')
   getAllEvents() {
     return this.eventosService.getAll();
   }
 
-  @UseGuards(AuthGuard)
+
   @Get('listar-eventos/:id')
   getEventById(@Param('id') id: number) {
     return this.eventosService.getOneById(id);
