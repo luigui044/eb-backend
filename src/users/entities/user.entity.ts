@@ -9,13 +9,14 @@ export class User {
     @Column({ type: 'varchar', length: 100, })
     name: string;
 
-    @Column({ type: 'varchar', length: 14, })
-    cedula: string;
+
     @Column({ type: 'varchar', length: 100, unique: true })
     email: string;
 
     @Column({ type: 'varchar', length: 200, })
     password: string;
+    @Column({ type: 'varchar', length: 14, })
+    cedula: string;
     @Column({ type: 'int' })
     rol: number;
 

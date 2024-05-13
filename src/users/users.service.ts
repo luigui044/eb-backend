@@ -1,5 +1,5 @@
 /* eslint-disable prettier/prettier */
-import { BadRequestException, HttpException, Injectable } from '@nestjs/common';
+import { BadRequestException, HttpException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { compare, hash } from 'bcrypt';
 import { LoginUserDto } from './dto/login-user-dto';
 import { JwtService } from '@nestjs/jwt';
+import { UpdateUserDto } from './dto/update-user.dto';
 @Injectable()
 export class UsersService {
 
@@ -27,11 +28,30 @@ export class UsersService {
   }
 
   async create(user: CreateUserDto) {
+
     const { password } = user;
     const plainToHash = await hash(password, 10);
     user = { ...user, password: plainToHash };
     const newUser = this.userRepositorty.create(user);
     return this.userRepositorty.save(newUser);
+  }
+
+
+
+
+  async update(id: number, user: UpdateUserDto) {
+    const existingUser = await this.userRepositorty.findOneBy({ id: id });
+
+    // Si el usuario no existe, lanzar un error 404 (Not Found)
+    if (!existingUser) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    // Actualizar las propiedades del usuario existente con las nuevas propiedades
+    Object.assign(existingUser, user);
+
+    // Guardar los cambios en la base de datos
+    return await this.userRepositorty.save(existingUser);
   }
 
   async signin(user: LoginUserDto) {
@@ -56,6 +76,11 @@ export class UsersService {
     return data;
   }
 
+  async getUsers() {
+
+    return this.userRepositorty.find();
+  }
+
   async getUserById(userId: number) {
     const user = await this.userRepositorty.findOneBy({
       id: userId
@@ -65,6 +90,9 @@ export class UsersService {
         id: userId,
         name: user.name,
         email: user.email,
+        cedula: user.cedula,
+        rol: user.rol,
+        password: user.password,
       };
     }
     else {

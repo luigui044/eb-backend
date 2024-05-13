@@ -4,20 +4,52 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user-dto';
 import { AuthGuard } from 'src/auth/auth.guards';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
-
+  @UseGuards(AuthGuard)
   @Post('signup')
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  async create(@Body() createUserDto: CreateUserDto) {
+    try {
+      const result = await this.usersService.create(createUserDto);
+      return result;
+    } catch (error) {
+
+      throw new Error('No se pudo crear el usuario');
+    }
   }
 
   @Post('signin')
   signin(@Body() singninUserDto: LoginUserDto) {
     return this.usersService.signin(singninUserDto);
   }
+
+  @UseGuards(AuthGuard)
+  @Get('get-users')
+  async getUsers() {
+
+    const result = await this.usersService.getUsers();
+    return result;
+
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('update-user/:id')
+  async updateUser(@Param('id') id: number, @Body() updateUserDto: UpdateUserDto) {
+    try {
+      const result = await this.usersService.update(id, updateUserDto);
+      return result;
+    } catch (error) {
+      throw new Error('No se pudo actualizar el usuario');
+    }
+  }
+
+
+
+
+
 
   @UseGuards(AuthGuard)
   @Get('get-user/:id')
