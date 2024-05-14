@@ -17,8 +17,10 @@ export class User {
     password: string;
     @Column({ type: 'varchar', length: 14, })
     cedula: string;
-    @Column({ type: 'int' })
+    @Column({ type: 'int', default: 2 })
     rol: number;
+    @Column({ type: 'int', default: 1 })
+    estado: number;
 
     @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     created_at: Date;

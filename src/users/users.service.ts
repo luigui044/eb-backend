@@ -12,7 +12,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 export class UsersService {
 
   constructor(@InjectRepository(User)
-  private userRepositorty: Repository<User>,
+  private userRepository: Repository<User>,
     private jwtService: JwtService) {
 
   }
@@ -32,31 +32,33 @@ export class UsersService {
     const { password } = user;
     const plainToHash = await hash(password, 10);
     user = { ...user, password: plainToHash };
-    const newUser = this.userRepositorty.create(user);
-    return this.userRepositorty.save(newUser);
+    const newUser = this.userRepository.create(user);
+    return this.userRepository.save(newUser);
   }
 
 
 
 
   async update(id: number, user: UpdateUserDto) {
-    const existingUser = await this.userRepositorty.findOneBy({ id: id });
+    const existingUser = await this.userRepository.findOneBy({ id: id });
 
-    // Si el usuario no existe, lanzar un error 404 (Not Found)
     if (!existingUser) {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    // Actualizar las propiedades del usuario existente con las nuevas propiedades
+    if (user.password) {
+      user.password = await hash(user.password, 10);
+    }
+
     Object.assign(existingUser, user);
 
-    // Guardar los cambios en la base de datos
-    return await this.userRepositorty.save(existingUser);
+    return await this.userRepository.save(existingUser);
   }
+
 
   async signin(user: LoginUserDto) {
     const { email, password } = user;
-    const userExist = await this.userRepositorty.findOneBy({
+    const userExist = await this.userRepository.findOneBy({
       email: email,
     });
     if (!userExist) {
@@ -78,11 +80,11 @@ export class UsersService {
 
   async getUsers() {
 
-    return this.userRepositorty.find();
+    return this.userRepository.find();
   }
 
   async getUserById(userId: number) {
-    const user = await this.userRepositorty.findOneBy({
+    const user = await this.userRepository.findOneBy({
       id: userId
     })
     if (user) {
